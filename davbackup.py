@@ -9,6 +9,7 @@ import shutil
 import logging
 import json
 from base64 import b64decode
+from datetime import datetime
 from glob import glob
 
 import easywebdav2
@@ -110,6 +111,10 @@ def main(args):
 
     opts = process_args(progname, args[1:])
 
+    start = datetime.now()
+    log.info("{0} Started at {1}".format(progname,
+                                    start.strftime("%A %F %H:%M:%S")))
+
     if os.path.isfile(opts.config):
         log.debug("Loading config '{}'".format(opts.config))
         with open(opts.config) as c:
@@ -122,6 +127,11 @@ def main(args):
     shift_dirs(opts.destdir, cfg["nbackups"])
 
     dav_download(cfg, opts.start, opts.destdir)
+
+    end = datetime.now()
+    log.info("{0} Processing ended at {1}".format(progname,
+                                    end.strftime("%A %F %H:%M:%S")))
+    log.info("Total processing time: {}".format(str(end - start)))
 
     return 0
 

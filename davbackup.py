@@ -8,6 +8,7 @@ import urllib
 import shutil
 import logging
 import json
+import ssl
 from base64 import b64decode
 from datetime import datetime
 from glob import glob
@@ -53,6 +54,27 @@ def dav_walk(cnx, rmtdir):
         yield from dav_walk(cnx, full_name)
 
 
+def try_download(cnx, cfg, rfile, lfile):
+    "Download file, reconnecting if any errors"
+    maxerrs = 3
+    nerrs = 0
+    while 1:
+        try:
+            log.info("[{0}] Downloading '{1}' -> '{2}'".format(nerrs, rfile, lfile))
+            cnx.download(rfile, lfile)
+            break
+        except (WebdavException, ssl.SSLError) as xcp:
+            nerrs += 1
+            log.exception(str(xcp))
+            if nerrs >= maxerrs:
+                raise
+            log.error("RETRYING with new connection.")
+            cnx = easywebdav2.connect(cfg["server"], username=cfg["username"],
+                            password=b64decode(cfg["password"]).rstrip(),
+                            protocol=cfg["protocol"])
+    return cnx
+        
+
 def dav_download(cfg, start, localtop):
     top_rmt = cfg["davstart"]
     if start != "/" and start != ".":
@@ -74,8 +96,7 @@ def dav_download(cfg, start, localtop):
         for f in filelst:
             rfile = os.path.join(d, f)
             lfile = os.path.join(localdir, f)
-            log.info("Downloading '{}' -> '{}'".format(rfile, lfile))
-            cnx.download(rfile, lfile)
+            cnx  = try_download(cnx, cfg, rfile, lfile)
 
 
 def shift_dirs(basedir, nbackups):

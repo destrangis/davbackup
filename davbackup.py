@@ -24,16 +24,98 @@ ch.setLevel(logging.DEBUG)
 log.addHandler(ch)
 
 
+class DavConnection:
+
+    def __init__(self, cfg, max_attempts_conn=3, max_attempts_dnl=3):
+        self.max_attempts_conn = max_attempts_conn
+        self.max_attempts_dnl = max_attempts_dnl
+        self.connection_incidents = 0
+        self.download_incidents = 0
+        self.total_size = 0
+        self.server = cfg["server"]
+        self.username = cfg["username"]
+        self.password = password=b64decode(cfg["password"]).rstrip()
+        self.protocol=cfg["protocol"]
+        self.connection = None
+        self.downloaded = 0
+
+    def connect(self):
+        attempt = 0
+        while attempt < self.max_attempts_conn:
+            attempt += 1
+            try:
+                self.connection = easywebdav2.connect(self.server,
+                            username=self.username,
+                            password=self.password,
+                            protocol=self.protocol)
+                break
+            except Exception as xcp:
+                self.connection = None
+                self.connection_incidents += 1
+                log.exception(str(xcp))
+
+        if self.connection is None:
+            raise easywebdav.ConnectionFailed("Could not connect to "
+                    "'{0}://{1}' with username '{2}'"
+                    .format(self.protocol, self.server, self.username))
+        
+        log.info("Connected to server '{}'".format(self.server))
+                    
+
+    def list_dir(self, rmtdir):
+        try:
+            ls = self.connection.ls(rmtdir)
+        except easywebdav2.client.OperationFailed as err:
+            log.error("Cannot list '{}' skipping.".format(rmtdir))
+            log.exception(str(err))
+            return []
+            
+        return ls
+            
+
+    def download(self, rfile, lfile, size = 0):
+        done = False
+        attempt = 0
+        while attempt <= self.max_attempts_dnl:
+            attempt += 1
+            log.info("[{0}] Downloading '{1}' -> '{2}'".format(attempt, rfile, lfile))
+            try:
+                self.connection.download(rfile, lfile)
+                done = True
+                break
+            except Exception as xcp:
+                self.download_incidents += 1
+                log.exception(str(xcp))
+                log.error("RETRYING with new connection.")
+                self.connect()
+                
+        if not done:
+            raise xcp
+            
+        self.downloaded += 1
+        self.total_size += size
+                
+
+def human_size(size):
+    units = [ "KB", "MB", "GB", "TB" ]
+    n = size
+    lastu = "bytes"
+    for u in units:
+        lastn = n
+        n = n / 1024
+        if n < 1:
+            return "{0:.5g} {1}".format(lastn, lastu)
+        lastu = u
+    else:
+        return "{0:.5g} {1}".format(n, lastu)
+
+
 def dav_walk(cnx, rmtdir):
     if not rmtdir.endswith("/"):
         rmtdir += "/"
-    try:
-        ls = cnx.ls(rmtdir)
-    except easywebdav2.client.OperationFailed as err:
-        log.error("Cannot list '{}'".format(rmtdir))
-        log.exception(str(err))
-        return
-
+        
+    ls = cnx.list_dir(rmtdir)
+    
     dirlst = []
     filelst = []
     for elm in ls:
@@ -45,7 +127,7 @@ def dav_walk(cnx, rmtdir):
             continue
 
         if elm.contenttype != "httpd/unix-directory":
-            filelst.append(os.path.basename(name))
+            filelst.append( (os.path.basename(name), elm.size) )
         else:
             dirlst.append(name)
     yield rmtdir, dirlst, filelst
@@ -53,26 +135,6 @@ def dav_walk(cnx, rmtdir):
         full_name = os.path.join(rmtdir, dirname)
         yield from dav_walk(cnx, full_name)
 
-
-def try_download(cnx, cfg, rfile, lfile):
-    "Download file, reconnecting if any errors"
-    maxerrs = 3
-    nerrs = 0
-    while 1:
-        try:
-            log.info("[{0}] Downloading '{1}' -> '{2}'".format(nerrs, rfile, lfile))
-            cnx.download(rfile, lfile)
-            break
-        except (WebdavException, ssl.SSLError) as xcp:
-            nerrs += 1
-            log.exception(str(xcp))
-            if nerrs >= maxerrs:
-                raise
-            log.error("RETRYING with new connection.")
-            cnx = easywebdav2.connect(cfg["server"], username=cfg["username"],
-                            password=b64decode(cfg["password"]).rstrip(),
-                            protocol=cfg["protocol"])
-    return cnx
         
 
 def dav_download(cfg, start, localtop):
@@ -82,21 +144,24 @@ def dav_download(cfg, start, localtop):
     if not top_rmt.endswith("/"):
         top_rmt += "/"
 
-    cnx = easywebdav2.connect(cfg["server"], username=cfg["username"],
-                            password=b64decode(cfg["password"]).rstrip(),
-                            protocol=cfg["protocol"])
-    log.info("Connected to server '{}'".format(cfg["server"]))
+    cnx = DavConnection(cfg)
+    cnx.connect()
 
     for d, dirlst, filelst in dav_walk(cnx, top_rmt):
         base_d = d[len(top_rmt):]
         localdir = os.path.join(localtop, base_d)
         if not os.path.isdir(localdir):
-            log.info("Creating dir '{}'".format(localdir))
+            log.info("Creating local dir '{}'".format(localdir))
             os.mkdir(localdir)
-        for f in filelst:
+        for f, size in filelst:
             rfile = os.path.join(d, f)
             lfile = os.path.join(localdir, f)
-            cnx  = try_download(cnx, cfg, rfile, lfile)
+            cnx.download(rfile, lfile, size)
+
+    log.info("Finished.")
+    log.info("{0:3d} Connection incidents".format(cnx.connection_incidents))
+    log.info("{0:3d} Download incidents".format(cnx.download_incidents))
+    log.info("{0} Files downloaded. {1} Transferred.".format(cnx.downloaded, human_size(cnx.total_size)))
 
 
 def shift_dirs(basedir, nbackups):

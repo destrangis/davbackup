@@ -58,9 +58,9 @@ class DavConnection:
             raise easywebdav.ConnectionFailed("Could not connect to "
                     "'{0}://{1}' with username '{2}'"
                     .format(self.protocol, self.server, self.username))
-        
+
         log.info("Connected to server '{}'".format(self.server))
-                    
+
 
     def list_dir(self, rmtdir):
         try:
@@ -69,9 +69,9 @@ class DavConnection:
             log.error("Cannot list '{}' skipping.".format(rmtdir))
             log.exception(str(err))
             return []
-            
+
         return ls
-            
+
 
     def download(self, rfile, lfile, size = 0):
         done = False
@@ -88,13 +88,13 @@ class DavConnection:
                 log.exception(str(xcp))
                 log.error("RETRYING with new connection.")
                 self.connect()
-                
+
         if not done:
-            raise xcp
-            
+            raise RuntimeError("Too many failures. Exiting.")
+
         self.downloaded += 1
         self.total_size += size
-                
+
 
 def human_size(size):
     units = [ "KB", "MB", "GB", "TB" ]
@@ -113,9 +113,9 @@ def human_size(size):
 def dav_walk(cnx, rmtdir):
     if not rmtdir.endswith("/"):
         rmtdir += "/"
-        
+
     ls = cnx.list_dir(rmtdir)
-    
+
     dirlst = []
     filelst = []
     for elm in ls:
@@ -135,7 +135,7 @@ def dav_walk(cnx, rmtdir):
         full_name = os.path.join(rmtdir, dirname)
         yield from dav_walk(cnx, full_name)
 
-        
+
 
 def dav_download(cfg, start, localtop):
     top_rmt = cfg["davstart"]

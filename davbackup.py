@@ -147,22 +147,26 @@ def dav_download(cfg, start, localtop):
     cnx = DavConnection(cfg)
     cnx.connect()
 
-    for d, dirlst, filelst in dav_walk(cnx, top_rmt):
-        base_d = d[len(top_rmt):]
-        localdir = os.path.join(localtop, base_d)
-        if not os.path.isdir(localdir):
-            log.info("Creating local dir '{}'".format(localdir))
-            os.mkdir(localdir)
-        for f, size in filelst:
-            rfile = os.path.join(d, f)
-            lfile = os.path.join(localdir, f)
-            cnx.download(rfile, lfile, size)
-
-    log.info("Finished.")
-    log.info("{0:3d} Connection incidents".format(cnx.connection_incidents))
-    log.info("{0:3d} Download incidents".format(cnx.download_incidents))
-    log.info("{0} Files downloaded. {1} Transferred.".format(cnx.downloaded, human_size(cnx.total_size)))
-
+    success = True
+    try:
+        for d, dirlst, filelst in dav_walk(cnx, top_rmt):
+            base_d = d[len(top_rmt):]
+            localdir = os.path.join(localtop, base_d)
+            if not os.path.isdir(localdir):
+                log.info("Creating local dir '{}'".format(localdir))
+                os.mkdir(localdir)
+            for f, size in filelst:
+                rfile = os.path.join(d, f)
+                lfile = os.path.join(localdir, f)
+                cnx.download(rfile, lfile, size)
+    except Exception:
+        success = False
+    finally:
+        log.info("Finished {}.".format("successfully" if success else "unsuccessfully"))
+        log.info("{0:3d} Connection incidents".format(cnx.connection_incidents))
+        log.info("{0:3d} Download incidents".format(cnx.download_incidents))
+        log.info("{0} Files downloaded. {1} Transferred.".format(cnx.downloaded, human_size(cnx.total_size)))
+    return success
 
 def shift_dirs(basedir, nbackups):
     if os.path.isdir(basedir):
@@ -210,9 +214,17 @@ def main(args):
         log.error("Cannot find config file '{}'".format(opts.config))
         return 1
 
+    nobackup = os.path.join(opts.destdir, NO_BACKUP_FILE)
+    if os.path.isfile(nobackup):
+        log.info("File '{}' found. Not performing backup."
+                                                .format(nobackup))
+        return 0
+
     shift_dirs(opts.destdir, cfg["nbackups"])
 
-    dav_download(cfg, opts.start, opts.destdir)
+    success = dav_download(cfg, opts.start, opts.destdir)
+    if not success:
+        open(nobackup, "w").close()
 
     end = datetime.now()
     log.info("{0} Processing ended at {1}".format(progname,

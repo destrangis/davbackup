@@ -16,6 +16,7 @@ from glob import glob
 import easywebdav2
 
 DEFAULT_CONFIG_FILE = "davbackup.json"
+NO_BACKUP_FILE = "nobackup"
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

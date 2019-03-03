@@ -8,3 +8,4 @@ pip-selfcheck.json
 pyvenv.cfg
 __pycache__/
 lib64
+davbackup.json

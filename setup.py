@@ -11,7 +11,7 @@ setup(
     py_modules=["davbackup"],
     author="Javier Llopis",
     author_email="javier@llopis.me",
-    url="http://mikrodev:3000/javier/davbackup",
+    url="https://github.com/destrangis/davbackup",
     description="Make backups of a DAV Server.",
     long_description=long_descr,
     entry_points = {

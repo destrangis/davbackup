@@ -1,0 +1,8 @@
+{
+    "protocol": "https",
+    "server": "nextcloud.samplesite.com",
+    "username": "fred",
+    "password": "YWJyYWNhZGFicmE=",
+    "davstart": "/remote.php/dav/files/fred",
+    "nbackups": 4
+}

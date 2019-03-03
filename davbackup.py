@@ -194,8 +194,11 @@ def process_args(progname, args):
     return p.parse_args(args)
 
 
-def main(args):
-    if args:
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
+
+    if len(args) > 0:
         progname = os.path.basename(args[0])
     else:
         progname = os.path.basename(__file__)

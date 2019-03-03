@@ -1,9 +1,6 @@
 DAVBACKUP
 =========
 
-Use this program instead of the old 'ocbackup' shell script.
-
-
 Downloads an entire tree from a DAV server. This can be used to make backups from an owncloud/nextcloud server.
 
 Usage
@@ -28,17 +25,20 @@ Usage
 Configuration file
 ------------------
 
+A sample configuration file is provided with the name `davbackup.json.sample`. Rename and edit to suit your needs.
+
 The configuration is a json file whose fields are self explanatory, except perhaps the `nbackups` field, explained below. Note that the password is base64 encoded. This makes it obscure, not secure, but the program is meant to be run on a trusted machine.
 
 ```
-    {
-        "protocol": "https",
-        "server": "oc.destrangis.com",
-        "username": "jl",
-        "password": "YWJyYWNhZGFicmE=",
-        "davstart": "/remote.php/dav/files/jl",
-        "nbackups": 4
-    }
+{
+    "protocol": "https",
+    "server": "nextcloud.samplesite.com",
+    "username": "fred",
+    "password": "YWJyYWNhZGFicmE=",
+    "davstart": "/remote.php/dav/files/fred",
+    "nbackups": 4
+}
+
 ```
 
 The field `nbackups` is the number of backups copy to keep. When the local directory exists already, it is presumed to contain a previous backup, and it is renamed with an extension .001, if a directory with a .001 extension exists, it is renamed to .002 and so on until the specified number of backups is reached. Directories that would have a higher number than the number of backups are simply deleted.
@@ -46,23 +46,25 @@ The field `nbackups` is the number of backups copy to keep. When the local direc
 Installing
 ----------
 
-Create a directory where the program is going to run from. Copy the files in this package, then run:
+Use the provided setup.py utility to install:
 
 ```
-    $ bash ./install.sh
+$ python3 setup.py install
 ```
-
-This will create a virtual environment and install the necessary dependencies.
+Or simply use `pip` to install from the the Pypi site:
+```
+$ pip install davbackup
+```
 
 
 Running
 -------
 
-Just run:
+Once you have a valid configuration file as described above, just run:
 
 ```
-    $ bash ./run.sh <args>
+    $ davbackup --config <configfile> --destdir <localdir>
 ```
 
-Where args are the same arguments as described above. This command activates the virtual environment and then runs the `davbackup.py` program. You cannot run the `davbackup.py` program directly unless you activate the virtual environment first.
+You can use the arguments described above.
 

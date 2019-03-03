@@ -196,13 +196,9 @@ def process_args(progname, args):
 
 def main(args=None):
     if args is None:
-        args = sys.argv[1:]
+        args = sys.argv
 
-    if len(args) > 0:
-        progname = os.path.basename(args[0])
-    else:
-        progname = os.path.basename(__file__)
-
+    progname = os.path.basename(args[0])
     opts = process_args(progname, args[1:])
 
     start = datetime.now()

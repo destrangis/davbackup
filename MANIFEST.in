@@ -1,0 +1,3 @@
+include davbackup.json.sample
+include LICENSE
+include README.md

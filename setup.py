@@ -15,13 +15,8 @@ setup(
     description="Make backups of a DAV Server.",
     long_description_content_type="text/x-rst",
     long_description=long_descr,
-    entry_points = {
-        'console_scripts': ['davbackup=davbackup:main'],
-    },
-    install_requires = [
-        "easywebdav2>=1.3.0",
-        "requests>=2.18.4",
-    ],
+    entry_points={"console_scripts": ["davbackup=davbackup:main"]},
+    install_requires=["easywebdav2>=1.3.0", "requests>=2.18.4"],
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python",
@@ -36,5 +31,5 @@ setup(
         "Topic :: System :: Archiving :: Backup",
         "Topic :: System :: Archiving :: Mirroring",
         "Topic :: Utilities",
-    ]
+    ],
 )

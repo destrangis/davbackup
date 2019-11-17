@@ -15,6 +15,7 @@ from glob import glob
 
 import easywebdav2
 
+VERSION = "0.1.2"
 DEFAULT_CONFIG_FILE = "davbackup.json"
 NO_BACKUP_FILE = "nobackup"
 
@@ -212,6 +213,13 @@ def process_args(progname, args):
         metavar="RMT_DIR",
         help="Download only the specified subtree.",
     )
+    p.add_argument(
+        "--version",
+        "-v",
+        default=False,
+        action="store_true",
+        help="show program version and exit",
+    )
     return p.parse_args(args)
 
 
@@ -221,6 +229,9 @@ def main(args=None):
 
     progname = os.path.basename(args[0])
     opts = process_args(progname, args[1:])
+    if opts.version:
+        print(VERSION)
+        return 0
 
     start = datetime.now()
     log.info("{0} Started at {1}".format(progname, start.strftime("%A %F %H:%M:%S")))

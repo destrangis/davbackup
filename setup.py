@@ -1,13 +1,14 @@
 #! /usr/bin/env python3
 
 from setuptools import setup
+from davbackup import VERSION
 
 with open("README.rst") as readme:
     long_descr = readme.read()
 
 setup(
     name="davbackup",
-    version="0.1.1",
+    version=VERSION,
     py_modules=["davbackup"],
     author="Javier Llopis",
     author_email="javier@llopis.me",

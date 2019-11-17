@@ -14,6 +14,7 @@ setup(
     author_email="javier@llopis.me",
     url="https://github.com/destrangis/davbackup",
     description="Make backups of a DAV Server.",
+    license="MIT",
     long_description_content_type="text/x-rst",
     long_description=long_descr,
     entry_points={"console_scripts": ["davbackup=davbackup:main"]},

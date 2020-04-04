@@ -15,7 +15,7 @@ from glob import glob
 
 import easywebdav2
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 DEFAULT_CONFIG_FILE = "davbackup.json"
 NO_BACKUP_FILE = "nobackup"
 

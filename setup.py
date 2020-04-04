@@ -1,7 +1,12 @@
 #! /usr/bin/env python3
 
 from setuptools import setup
-from davbackup import VERSION
+import re
+
+with open("davbackup.py") as fd:
+    source = fd.read()
+VERSION = re.search(r'^VERSION\s*=\s*\"([^"]+)', source, re.MULTILINE).group(1)
+    
 
 with open("README.rst") as readme:
     long_descr = readme.read()

@@ -163,6 +163,7 @@ def dav_download(cfg, start, localtop):
                 lfile = os.path.join(localdir, f)
                 cnx.download(rfile, lfile, size)
     except Exception:
+        log.error("Stopping Backup", exc_info=True)
         success = False
     finally:
         log.info("Finished {}.".format("successfully" if success else "unsuccessfully"))

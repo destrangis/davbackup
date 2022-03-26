@@ -9,13 +9,14 @@ import shutil
 import logging
 import json
 import ssl
+import time
 from base64 import b64decode
 from datetime import datetime
 from glob import glob
 
 import easywebdav2
 
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 DEFAULT_CONFIG_FILE = "davbackup.json"
 NO_BACKUP_FILE = "nobackup"
 
@@ -80,6 +81,7 @@ class DavConnection:
     def download(self, rfile, lfile, size=0):
         done = False
         attempt = 0
+        wait = 1
         while attempt <= self.max_attempts_dnl:
             attempt += 1
             log.info("[{0}] Downloading '{1}' -> '{2}'".format(attempt, rfile, lfile))
@@ -88,8 +90,11 @@ class DavConnection:
                 done = True
                 break
             except Exception as xcp:
+                wait *= 10
                 self.download_incidents += 1
                 log.exception(str(xcp))
+                log.info("Waiting {} seconds.".format(wait))
+                time.sleep(wait)
                 log.error("RETRYING with new connection.")
                 self.connect()
 
@@ -244,7 +249,7 @@ def main(args=None):
         log.debug("Config: " + str(cfg))
     else:
         log.error("Cannot find config file '{}'".format(opts.config))
-        return 1
+        return 2
 
     nobackup = os.path.join(opts.destdir, NO_BACKUP_FILE)
     if os.path.isfile(nobackup):
@@ -263,7 +268,7 @@ def main(args=None):
     )
     log.info("Total processing time: {}".format(str(end - start)))
 
-    return 0
+    return 0 if success else 1
 
 
 if __name__ == "__main__":
